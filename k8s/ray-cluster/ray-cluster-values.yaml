@@ -1,0 +1,69 @@
+# Конфігурація образу
+image:
+  repository: spodarets/ray-worker
+  tag: "2.46.0-py310-aarch64"
+  pullPolicy: IfNotPresent
+
+# Конфігурація головного вузла
+head:
+  # Увімкнути автомасштабування
+  enableInTreeAutoscaling: true
+  autoscalerOptions:
+    upscalingMode: Default
+    idleTimeoutSeconds: 60
+    
+  # Параметри запуску Ray
+  rayStartParams:
+    num-cpus: "0"
+    dashboard-host: "0.0.0.0"
+    metrics-export-port: "8080"
+  
+  # Змінні середовища для інтеграції з Grafana
+  containerEnv:
+  - name: RAY_GRAFANA_IFRAME_HOST
+    value: "http://127.0.0.1:3000"
+  - name: RAY_GRAFANA_HOST
+    value: "http://prometheus-grafana.prometheus-system.svc:80"
+  - name: RAY_PROMETHEUS_HOST
+    value: "http://prometheus-kube-prometheus-prometheus.prometheus-system.svc:9090"
+  - name: RAY_PROMETHEUS_NAME
+    value: "Prometheus"
+  
+  # Ресурси головного вузла - MINIMIZED FOR KIND CLUSTER
+  resources:
+    limits:
+      cpu: "1"
+      memory: "2Gi"  # Increased for better stability
+    requests:
+      cpu: "1"       # Match limits
+      memory: "2Gi"  # Match limits
+
+# Конфігурація робочого вузла - UPDATED FOR YOLO TRAINING
+worker:
+  replicas: 2
+  minReplicas: 1
+  maxReplicas: 4
+  
+  # Параметри Ray для робочих вузлів
+  rayStartParams:
+    metrics-export-port: "8080"
+  
+  # Змінні середовища для робочих вузлів
+  containerEnv:
+  - name: RAY_GRAFANA_IFRAME_HOST
+    value: "http://127.0.0.1:3000"
+  - name: RAY_GRAFANA_HOST
+    value: "http://prometheus-grafana.prometheus-system.svc:80"
+  - name: RAY_PROMETHEUS_HOST
+    value: "http://prometheus-kube-prometheus-prometheus.prometheus-system.svc:9090"
+  - name: RAY_PROMETHEUS_NAME
+    value: "Prometheus"
+  
+  # Ресурси робочого вузла - INCREASED FOR YOLO TRAINING
+  resources:
+    limits:
+      cpu: "1"
+      memory: "6Gi"  # Increased from 3Gi to accommodate YOLO training
+    requests:
+      cpu: "1"
+      memory: "6Gi"  # Match limits for guaranteed QoS

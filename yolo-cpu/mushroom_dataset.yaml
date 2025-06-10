@@ -1,0 +1,11 @@
+# Custom Mushroom Dataset Configuration
+path: ../dataset  # Dataset root directory (relative to this file)
+train: images     # Train images (relative to 'path')
+val: images       # Validation images (relative to 'path') - using same as train for this demo
+
+# Classes
+names:
+  0: Mushroom
+
+# Number of classes
+nc: 1 
