@@ -1,5 +1,8 @@
-# Video Link for the project:
+# Video Link for the Homework 2:
 https://www.loom.com/share/fc203cdba0ab4dd3aeb7ce3dea9c6f08?sid=e248d2b0-82cb-436f-95c2-c2ec9b3ef54d
+
+# Video Link for the Homework 3:
+https://www.loom.com/share/aae4ab34cb0241f592ac971b638adda1?sid=81c822dd-68a7-495a-a444-24a4adc220f5
 
 # MLOps Homework 2: Distributed YOLO Training with Ray
 

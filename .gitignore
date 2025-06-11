@@ -1,3 +1,6 @@
 /setuniversity-mlops-s25
 /venv
 /yolo-cpu/venv-ray-3.10.17
+/ray-deploy/venv-ray-3.10.17
+/ray-deploy/__pycache__
+.env*
