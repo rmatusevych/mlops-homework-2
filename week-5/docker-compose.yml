@@ -1,0 +1,126 @@
+services:
+  yolo-api:
+    build: 
+      context: ./yolo
+      dockerfile: Dockerfile
+    container_name: yolo-api
+    ports:
+      - "30080:8000"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=yolo-detection-api
+    volumes:
+      - ./yolo:/app/yolo
+      - ./monitoring:/app/monitoring
+    networks:
+      - monitoring
+    depends_on:
+      otel-collector:
+        condition: service_started
+
+  # OpenTelemetry Collector - для даних YOLO
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./monitoring/otel/otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "30317:4317"  # OTLP gRPC receiver
+      - "30318:4318"  # OTLP HTTP receiver  
+      - "30888:8888"  # Collector metrics
+    networks:
+      - monitoring
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ClickHouse - детальні дані YOLO
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    ports:
+      - "30123:8123"  # HTTP interface
+      - "30900:9000"  # Native interface
+    environment:
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD=
+      - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - monitoring
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Grafana - підключений до ClickHouse + Prometheus
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "30001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    networks:
+      - monitoring
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      prometheus:
+        condition: service_started
+
+  # Prometheus - системні та інфраструктурні метрики
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "30091:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring
+
+  # Node Exporter - системні метрики хоста (ЦП, пам'ять)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "30100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys' 
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  clickhouse_data:

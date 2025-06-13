@@ -1,0 +1,11 @@
+ultralytics
+fastapi
+uvicorn
+python-multipart
+opencv-python
+numpy
+requests
+Pillow
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-otlp 

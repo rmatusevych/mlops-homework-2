@@ -1,0 +1,5 @@
+evidently
+clickhouse-driver
+pandas
+python-dotenv
+requests 

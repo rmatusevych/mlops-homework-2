@@ -1,0 +1,456 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 2,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          },
+          "format": 1,
+          "rawSql": "WITH time_series AS (\n  SELECT\n    toStartOfMinute(toDateTime($__fromTime) + number * 60) as time\n  FROM system.numbers\n  LIMIT toUInt64((toDateTime($__toTime) - toDateTime($__fromTime)) / 60) + 1\n)\nSELECT\n  ts.time,\n  coalesce(t.predictions, 0) as predictions\nFROM time_series ts\nLEFT JOIN (\n  SELECT\n    toStartOfMinute(Timestamp) as time,\n    count() as predictions\n  FROM yolo_analytics.otel_traces\n  WHERE SpanName = 'yolo_prediction'\n    AND Timestamp >= $__fromTime\n    AND Timestamp <= $__toTime\n  GROUP BY time\n) t ON ts.time = t.time\nORDER BY ts.time",
+          "refId": "A"
+        }
+      ],
+      "title": "YOLO Predictions per Minute",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "stepAfter",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          },
+          "format": 1,
+          "rawSql": "WITH time_series AS (\n  SELECT\n    toStartOfMinute(toDateTime($__fromTime) + number * 60) as time\n  FROM system.numbers\n  LIMIT toUInt64((toDateTime($__toTime) - toDateTime($__fromTime)) / 60) + 1\n)\nSELECT\n  ts.time,\n  coalesce(t.low_confidence_objects, 0) as low_confidence_objects\nFROM time_series ts\nLEFT JOIN (\n  SELECT\n    toStartOfMinute(Timestamp) as time,\n    countIf(toFloat64(arrayJoin(Events.Attributes)['confidence']) < 0.9) as low_confidence_objects\n  FROM yolo_analytics.otel_traces\n  WHERE SpanName = 'yolo_prediction'\n    AND Timestamp >= $__fromTime\n    AND Timestamp <= $__toTime\n  GROUP BY time\n) t ON ts.time = t.time\nORDER BY ts.time",
+          "refId": "A"
+        }
+      ],
+      "title": "Low-confidence Objects (< 0.9)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          },
+          "format": 1,
+          "rawSql": "WITH time_series AS (\n  SELECT\n    toStartOfMinute(toDateTime($__fromTime) + number * 60) as time\n  FROM system.numbers\n  LIMIT toUInt64((toDateTime($__toTime) - toDateTime($__fromTime)) / 60) + 1\n)\nSELECT\n  ts.time,\n  coalesce(t.avg_processing_time, 0) as avg_processing_time\nFROM time_series ts\nLEFT JOIN (\n  SELECT\n    toStartOfMinute(Timestamp) as time,\n    avg(toFloat64(SpanAttributes['processing_time_seconds'])) as avg_processing_time\n  FROM yolo_analytics.otel_traces\n  WHERE SpanName = 'yolo_prediction'\n    AND Timestamp >= $__fromTime\n    AND Timestamp <= $__toTime\n  GROUP BY time\n) t ON ts.time = t.time\nORDER BY ts.time",
+          "refId": "A"
+        }
+      ],
+      "title": "Average Processing Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "low_confidence_count"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "low_confidence_percent"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "gradient-gauge"
+              },
+              {
+                "id": "max",
+                "value": 100
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "detections"
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          },
+          "format": 1,
+          "rawSql": "SELECT\n  Timestamp,\n  SpanAttributes['filename'] as filename,\n  toInt32(SpanAttributes['total_objects']) as total_objects,\n  toFloat64(SpanAttributes['processing_time_seconds']) as processing_time,\n  arrayJoin(Events.Attributes)['class_name'] as class_name,\n  toFloat64(arrayJoin(Events.Attributes)['confidence']) as confidence\nFROM yolo_analytics.otel_traces\nWHERE SpanName = 'yolo_prediction'\n  AND Timestamp >= $__fromTime\n  AND Timestamp <= $__toTime\nORDER BY Timestamp DESC\nLIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent Detections",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "PDEE91DDB90597936"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto",
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "low_confidence_count"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "PDEE91DDB90597936"
+          },
+          "format": 1,
+          "rawSql": "SELECT\n  arrayJoin(Events.Attributes)['class_name'] as class_name,\n  count() as total_detections,\n  countIf(toFloat64(arrayJoin(Events.Attributes)['confidence']) < 0.9) as low_confidence_count,\n  round((countIf(toFloat64(arrayJoin(Events.Attributes)['confidence']) < 0.9) / count()) * 100, 1) as low_confidence_percent\nFROM yolo_analytics.otel_traces\nWHERE SpanName = 'yolo_prediction'\n  AND Timestamp >= $__fromTime\n  AND Timestamp <= $__toTime\nGROUP BY class_name\nORDER BY total_detections DESC\nLIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "title": "Object Classes Distribution with Low-confidence",
+      "type": "table"
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": [
+    "yolo",
+    "monitoring",
+    "object-detection",
+    "clickhouse"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "YOLO11 ClickHouse Monitoring Dashboard",
+  "uid": "yolo-clickhouse",
+  "version": 1,
+  "weekStart": ""
+} 
