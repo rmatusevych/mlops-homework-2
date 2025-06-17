@@ -1,0 +1,53 @@
+name: Train on Ray Cluster
+
+on:
+  workflow_dispatch:
+    inputs:
+      show_logs:
+        description: 'Show training logs in real-time'
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'yolo-cpu/**'
+
+jobs:
+  train-on-ray:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.17'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ray[default]==2.46.0 python-dotenv requests pyyaml
+
+      - name: Submit training to Ray cluster
+        id: training
+        working-directory: yolo-cpu
+        env:
+          WANDB_API_KEY: cbfdb837eec734ebbf3485f6f5272bd4445b1474
+          WANDB_ENTITY: rmatusevych-ukeess
+          WANDB_PROJECT: setuniversity-mlops
+        run: |
+          python submit_job.py ${{ inputs.show_logs && '--show-logs' || '' }}
+          
+      - name: Add job info to summary
+        run: |
+          echo "## Training Job Submitted" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Training job has been submitted to Ray cluster." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Job ID**: ${{ steps.training.outputs.job_id || 'unknown' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ steps.training.outputs.status || 'SUBMITTED' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Message**: ${{ steps.training.outputs.message || 'Job started on cluster' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check Weights & Biases dashboard for training results." >> $GITHUB_STEP_SUMMARY 

@@ -160,7 +160,7 @@ def main():
     print("=" * 40)
     
     # Адреса кластера Ray
-    ray_address = "ray://localhost:10001"  # Адреса кластера Ray
+    ray_address = "ray://host.docker.internal:10001"  # Адреса кластера Ray
     
     # Перевіряємо необхідні файли
     if not check_required_files():

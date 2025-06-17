@@ -3,7 +3,7 @@ model: yolov8n.pt
 data: mushroom_dataset.yaml  # Using custom mushroom dataset instead of coco8.yaml
 
 # Параметри тренування
-epochs: 3
+epochs: 20
 batch: 16
 imgsz: 640
 device: cpu

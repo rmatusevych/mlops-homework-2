@@ -7,6 +7,9 @@ https://www.loom.com/share/aae4ab34cb0241f592ac971b638adda1?sid=81c822dd-68a7-49
 # Video Link for Homework 4:
 https://www.loom.com/share/d820621ad352466a91cc8cc976915577?sid=f49dbae3-9423-4d7f-a98a-f7369c0e971b
 
+# Video Link for Homework 5:
+https://www.loom.com/share/bcadc221c8d2470f9efe16dcef585099?sid=a8c2b7ee-0118-4c95-abff-4a723c3d778a
+
 # MLOps Homework 2: Distributed YOLO Training with Ray
 
 This project demonstrates a complete MLOps pipeline for training YOLOv8 object detection models using Ray for distributed computing, Kubernetes for orchestration, and Weights & Biases for experiment tracking.

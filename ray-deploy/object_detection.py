@@ -6,6 +6,12 @@ import subprocess
 import sys
 import os
 import wandb
+import base64
+import cv2
+import numpy as np
+from pydantic import BaseModel
+from typing import Optional
+import tempfile
 
 import ray
 from ray import serve
@@ -14,6 +20,10 @@ from ray.serve.handle import DeploymentHandle
 #serve.start(http_options={"host": "0.0.0.0", "port": 8001})
 
 app = FastAPI()
+
+class ImageRequest(BaseModel):
+    image_data: str  # base64 encoded image
+    image_url: Optional[str] = None  # optional for backward compatibility
 
 @serve.deployment(
     num_replicas=1,
@@ -29,8 +39,22 @@ class APIIngress:
         )
 
     @app.get("/detect")
-    async def detect(self, image_url: str):
-        result = await self.handle.detect.remote(image_url)
+    async def detect_get(self, image_url: str):
+        # Keep GET endpoint for backward compatibility
+        result = await self.handle.detect_url.remote(image_url)
+        return JSONResponse(content=result)
+
+    @app.post("/detect")
+    async def detect_post(self, request: ImageRequest):
+        if request.image_data:
+            # Handle base64 encoded image
+            result = await self.handle.detect_base64.remote(request.image_data)
+        elif request.image_url:
+            # Handle image URL for backward compatibility
+            result = await self.handle.detect_url.remote(request.image_url)
+        else:
+            return JSONResponse(content={"error": "Either image_data or image_url must be provided"}, status_code=400)
+        
         return JSONResponse(content=result)
 
 
@@ -95,9 +119,44 @@ class ObjectDetection:
             # Завершуємо wandb run після завантаження моделі
             wandb.finish()
 
-    async def detect(self, image_url: str):
+    async def detect_url(self, image_url: str):
+        # Original method for URL-based detection
         results = self.model(image_url)
+        return self._process_results(results)
 
+    async def detect_base64(self, image_data: str):
+        # New method for base64-encoded image detection
+        try:
+            # Decode base64 image
+            image_bytes = base64.b64decode(image_data)
+            
+            # Convert to numpy array
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            
+            # Decode image
+            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            if image is None:
+                return {"error": "Failed to decode image"}
+            
+            # Create temporary file for YOLO inference
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
+                cv2.imwrite(tmp_file.name, image)
+                tmp_path = tmp_file.name
+            
+            try:
+                # Run inference
+                results = self.model(tmp_path)
+                return self._process_results(results)
+            finally:
+                # Clean up temporary file
+                os.unlink(tmp_path)
+                
+        except Exception as e:
+            return {"error": f"Failed to process image: {str(e)}"}
+
+    def _process_results(self, results):
+        # Common method to process YOLO results
         detected_objects = []
         if len(results) > 0:
             for result in results:
@@ -111,5 +170,9 @@ class ObjectDetection:
             return {"status": "found", "objects": detected_objects}
         else:
             return {"status": "not found"}
+
+    # Keep original method for backward compatibility
+    async def detect(self, image_url: str):
+        return await self.detect_url(image_url)
 
 entrypoint = APIIngress.bind(ObjectDetection.bind())

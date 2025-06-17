@@ -21,7 +21,9 @@ ray.init(
             "seaborn",
             "scikit-learn",
             "torch",
-            "torchvision"
+            "torchvision",
+            "numpy",
+            "pydantic"
         ],
         "env_vars": {
             "OPENCV_IO_ENABLE_OPENEXR": "0",

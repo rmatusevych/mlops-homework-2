@@ -5,4 +5,4 @@
 /ray-deploy/__pycache__
 .env*
 __pycache__
-
+venv-ray-3.10.17
